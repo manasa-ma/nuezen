@@ -1,13 +1,8 @@
 import axios from "axios";
 
-// This line gets the URL from Vercel
-const apiURL = import.meta.env.VITE_API_URL;
-
 const api = axios.create({
-  baseURL: apiURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // Hardcode your working Railway URL here for 100% certainty
+  baseURL: "https://focused-embrace-production-b69f.up.railway.app",
 });
 
 export default api;
