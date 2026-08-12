@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Admin",
+      "email": "admin@neuzen.ai",
+      "password": "$2b$10$4e2Z76CaODkYPQHTVz1TruKQKXiXDkjzBdqN9A4jIc4uEK3V/RA1y",
+      "role": "Admin"
+    },
+    {
+      "id": 2,
+      "name": "HR",
+      "email": "hr@neuzen.ai",
+      "password": "$2b$10$4e2Z76CaODkYPQHTVz1TruKQKXiXDkjzBdqN9A4jIc4uEK3V/RA1y",
+      "role": "HR"
+    },
+    {
+      "id": 3,
+      "name": "Employee",
+      "email": "employee@neuzen.ai",
+      "password": "$2b$10$4e2Z76CaODkYPQHTVz1TruKQKXiXDkjzBdqN9A4jIc4uEK3V/RA1y",
+      "role": "Employee"
+    }
+  ],
+  "leaves": [],
+  "attendance": []
+}
