@@ -1,15 +1,25 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+
+// 1. Auth & Layout
 import Login from './pages/auth/Login';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+
+// 2. HR Pages
 import HRDashboard from './pages/hr/HRDashboard';
 import Onboarding from './pages/hr/Onboarding';
 import LeaveApprovals from './pages/hr/LeaveApprovals';
+import HRAttendance from './pages/hr/Attendance';
 import Payroll from './pages/hr/Payroll';
+
+// 3. Employee Pages
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
-import MyLeaves from './pages/employee/MyLeaves';
 import MyAttendance from './pages/employee/MyAttendance';
+import MyLeaves from './pages/employee/MyLeaves';
 import MyPayroll from './pages/employee/MyPayroll';
+import TeamCalendarPage from './pages/employee/Calendar'; // ONLY ONE IMPORT FOR CALENDAR
+
+// 4. Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 
@@ -18,35 +28,27 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       
-      {/* Admin */}
-      <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['Admin']}>
-          <Routes>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<UserManagement />} />
-          </Routes>
-      </ProtectedRoute>} />
+      {/* ADMIN ROUTES */}
+      <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['Admin']}><UserManagement /></ProtectedRoute>} />
 
-      {/* HR */}
-      <Route path="/hr/*" element={<ProtectedRoute allowedRoles={['HR']}>
-          <Routes>
-            <Route path="dashboard" element={<HRDashboard />} />
-            <Route path="onboarding" element={<Onboarding />} />
-            <Route path="leaves" element={<LeaveApprovals />} />
-            <Route path="payroll" element={<Payroll />} />
-          </Routes>
-      </ProtectedRoute>} />
+      {/* HR ROUTES */}
+      <Route path="/hr/dashboard" element={<ProtectedRoute allowedRoles={['HR']}><HRDashboard /></ProtectedRoute>} />
+      <Route path="/hr/onboarding" element={<ProtectedRoute allowedRoles={['HR']}><Onboarding /></ProtectedRoute>} />
+      <Route path="/hr/leaves" element={<ProtectedRoute allowedRoles={['HR']}><LeaveApprovals /></ProtectedRoute>} />
+      <Route path="/hr/attendance" element={<ProtectedRoute allowedRoles={['HR']}><HRAttendance /></ProtectedRoute>} />
+      <Route path="/hr/payroll" element={<ProtectedRoute allowedRoles={['HR']}><Payroll /></ProtectedRoute>} />
 
-      {/* Employee */}
-      <Route path="/employee/*" element={<ProtectedRoute allowedRoles={['Employee']}>
-          <Routes>
-            <Route path="dashboard" element={<EmployeeDashboard />} />
-            <Route path="leaves" element={<MyLeaves />} />
-            <Route path="attendance" element={<MyAttendance />} />
-            <Route path="payroll" element={<MyPayroll />} />
-          </Routes>
-      </ProtectedRoute>} />
+      {/* EMPLOYEE ROUTES */}
+      <Route path="/employee/dashboard" element={<ProtectedRoute allowedRoles={['Employee', 'HR']}><EmployeeDashboard /></ProtectedRoute>} />
+      <Route path="/employee/attendance" element={<ProtectedRoute allowedRoles={['Employee', 'HR']}><MyAttendance /></ProtectedRoute>} />
+      <Route path="/employee/leaves" element={<ProtectedRoute allowedRoles={['Employee', 'HR']}><MyLeaves /></ProtectedRoute>} />
+      <Route path="/employee/payroll" element={<ProtectedRoute allowedRoles={['Employee', 'HR']}><MyPayroll /></ProtectedRoute>} />
+      <Route path="/employee/calendar" element={<ProtectedRoute allowedRoles={['Employee', 'HR', 'Admin']}><TeamCalendarPage /></ProtectedRoute>} />
 
+      {/* Redirects */}
       <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

@@ -1,90 +1,117 @@
 import React, { useState } from 'react';
 import Layout from '../../components/layout/Navbar';
-import { UserPlus, Send, Eye, FileText } from 'lucide-react';
+import API from '../../api/axios';
+import { Send, FileText, UserPlus, Mail, IndianRupee } from 'lucide-react';
 
-const Onboarding = () => {
-  const [showPreview, setShowPreview] = useState(false);
-  const [formData, setFormData] = useState({ name: '', role: '', salary: '' });
+export default function Onboarding() {
+  const [form, setForm] = useState({ name: '', email: '', salary: '', role: 'Software Engineer' });
+  const [loading, setLoading] = useState(false);
+
+  const handleOnboard = async (e) => {
+    e.preventDefault();
+    
+    // 1. Frontend Validation
+    if(!form.name || !form.email || !form.salary) {
+        return alert("Please fill in all fields (Name, Email, and Salary).");
+    }
+
+    setLoading(true);
+    try {
+      // 2. API Call
+      await API.post('/hr/onboard', form);
+      
+      alert(`✅ Success! Digital Offer Letter sent to ${form.email}. They can now login with password: password123`);
+      
+      // 3. Reset form on success
+      setForm({ name: '', email: '', salary: '', role: 'Software Engineer' });
+    } catch (err) { 
+      // 4. Catch specific error message from Backend
+      const msg = err.response?.data?.message || "Onboarding Failed. Check if the server is running.";
+      alert(msg); 
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Layout>
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Onboarding Portal</h1>
-          <p className="text-slate-500">Trigger candidate onboarding and generate offer letters.</p>
-        </div>
-      </div>
+      <div className="flex flex-col lg:flex-row gap-10">
+        
+        {/* LEFT: INPUT FORM */}
+        <div className="lg:w-1/3 space-y-6">
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">New Onboarding</h1>
+            <p className="text-slate-500 font-medium">Create employee profile and generate letter.</p>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Form */}
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-          <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center">
-            <UserPlus className="mr-2 text-blue-600" size={20}/> Candidate Details
-          </h2>
-          <form className="space-y-4">
-            <input 
-              type="text" placeholder="Full Name" 
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition"
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-            />
-            <select 
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition"
-              onChange={(e) => setFormData({...formData, role: e.target.value})}
-            >
-              <option value="">Select Role</option>
-              <option value="Software Engineer">Software Engineer</option>
-              <option value="Product Manager">Product Manager</option>
-            </select>
-            <input 
-              type="number" placeholder="Monthly Salary (₹)" 
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition"
-              onChange={(e) => setFormData({...formData, salary: e.target.value})}
-            />
-            <div className="flex space-x-3 pt-4">
-              <button 
-                type="button" onClick={() => setShowPreview(true)}
-                className="flex-1 flex items-center justify-center py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition"
-              >
-                <Eye size={18} className="mr-2" /> Preview Letter
-              </button>
-              <button 
-                type="button" 
-                className="flex-1 flex items-center justify-center py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
-              >
-                <Send size={18} className="mr-2" /> Send Offer
-              </button>
+          <form onSubmit={handleOnboard} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Full Name</label>
+              <div className="relative">
+                <UserPlus className="absolute left-3 top-3 text-slate-400" size={18} />
+                <input required className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 transition font-medium" 
+                  value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="John Doe" />
+              </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Work Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
+                <input required type="email" className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 transition font-medium" 
+                  value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@neuzen.ai" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Monthly Salary</label>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-3 text-slate-400" size={18} />
+                <input required type="number" className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 transition font-medium" 
+                  value={form.salary} onChange={e => setForm({...form, salary: e.target.value})} placeholder="75000" />
+              </div>
+            </div>
+
+            <button disabled={loading} type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black flex items-center justify-center hover:bg-blue-600 transition shadow-xl disabled:opacity-50">
+              <Send size={18} className="mr-2" /> {loading ? "RECORDING..." : "FINISH & SEND OFFER"}
+            </button>
           </form>
         </div>
 
-        {/* Digital Letter Preview */}
-        {showPreview ? (
-          <div className="bg-white p-10 rounded-2xl shadow-inner border-2 border-blue-50 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-4 opacity-10">
-                <FileText size={120} />
-             </div>
-             <div className="relative z-10">
-               <h3 className="text-xl font-black text-blue-600 italic mb-10">NEUZEN AI</h3>
-               <p className="text-sm text-slate-500 mb-6 font-bold uppercase tracking-widest">Letter of Intent</p>
-               <p className="text-slate-700 mb-4 font-medium">Dear <span className="text-blue-600 font-bold">{formData.name || "[Candidate Name]"}</span>,</p>
-               <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                 We are pleased to offer you the position of <span className="font-bold text-slate-800">{formData.role || "[Role]"}</span> at NEUZEN AI. 
-                 Your monthly gross salary will be <span className="font-bold text-slate-800">₹{formData.salary || "0"}</span>.
-               </p>
-               <div className="pt-10 border-t border-slate-100">
-                 <p className="text-xs font-bold text-slate-400">Authorized Signatory</p>
-                 <p className="text-sm font-black text-slate-800">Human Resources Team</p>
-               </div>
-             </div>
+        {/* RIGHT: LIVE PREVIEW */}
+        <div className="lg:w-2/3">
+          <div className="bg-white p-12 rounded-[2rem] shadow-2xl border border-slate-100 min-h-[600px] relative overflow-hidden">
+            <div className="absolute top-10 right-10 opacity-10 rotate-12 text-slate-300">
+               <FileText size={150} />
+            </div>
+
+            <div className="relative z-10">
+              <h2 className="text-2xl font-black text-blue-600 italic mb-10">NEUZEN AI</h2>
+              <h3 className="text-4xl font-bold text-slate-800 mb-8 underline decoration-blue-500 underline-offset-8">Letter of Intent</h3>
+              
+              <div className="space-y-6 text-slate-600 leading-relaxed font-medium">
+                <p>Date: {new Date().toLocaleDateString()}</p>
+                <p>To, <br/><span className="text-slate-900 font-bold text-xl">{form.name || "[Candidate Name]"}</span></p>
+                
+                <p>We are delighted to offer you a position at <b>NEUZEN AI</b>. Based on your profile, you have been selected for the role of <b>{form.role}</b>.</p>
+                
+                <div className="bg-slate-50 p-6 rounded-2xl border-l-4 border-blue-500">
+                  <p className="text-sm font-bold text-slate-400 mb-2 uppercase">Financial Package</p>
+                  <p className="text-2xl font-black text-slate-800">₹{form.salary || "0"} <span className="text-sm font-medium text-slate-500">/ per month</span></p>
+                </div>
+
+                <p>Please review this document and confirm your acceptance by replying to the HR team.</p>
+              </div>
+
+              <div className="mt-16 pt-8 border-t border-slate-100">
+                <p className="text-sm font-bold text-slate-400">Authorized Signatory</p>
+                <p className="text-lg font-black text-slate-800">Head of Human Resources</p>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="flex items-center justify-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
-            <p className="text-slate-400 text-sm font-bold">Enter details to generate preview</p>
-          </div>
-        )}
+        </div>
+
       </div>
     </Layout>
   );
-};
-
-export default Onboarding;
+}

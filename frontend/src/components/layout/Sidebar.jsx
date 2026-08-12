@@ -22,6 +22,8 @@ const Sidebar = () => {
       { name: 'Attendance', path: '/employee/attendance', icon: <ClipboardCheck size={20}/> },
       { name: 'My Leaves', path: '/employee/leaves', icon: <Calendar size={20}/> },
       { name: 'Pay Slips', path: '/employee/payroll', icon: <FileText size={20}/> },
+      // Inside menuItems for all roles:
+{ name: 'Calendar', path: '/employee/calendar', icon: <Calendar size={20}/> },
     ],
   };
 

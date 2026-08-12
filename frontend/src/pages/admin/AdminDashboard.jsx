@@ -1,43 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../../components/layout/Navbar';
-import { Shield, Users, Settings, Activity } from 'lucide-react';
+import API from '../../api/axios';
+import { Shield, Users, Activity, Settings, AlertCircle } from 'lucide-react';
 
-const AdminDashboard = () => {
-  const stats = [
-    { label: 'Total System Users', value: '150', icon: <Users />, color: 'bg-indigo-600' },
-    { label: 'Active Sessions', value: '12', icon: <Activity />, color: 'bg-emerald-500' },
-    { label: 'System Health', value: '99.9%', icon: <Shield />, color: 'bg-amber-500' },
-    { label: 'Pending Configs', value: '2', icon: <Settings />, color: 'bg-slate-700' },
-  ];
+export default function AdminDashboard() {
+  const [stats, setStats] = useState({ userCount: 0, leaveCount: 0, attendanceCount: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    API.get('/admin/stats')
+      .then(res => setStats(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Layout><div className="p-10 animate-pulse text-slate-400">Loading System Data...</div></Layout>;
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-800">System Administration</h1>
-        <p className="text-slate-500">Global control panel for NEUZEN AI HRMS.</p>
+      <div className="mb-10">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">System Control Panel</h1>
+        <p className="text-slate-500 font-medium">Global oversight of NEUZEN AI infrastructure.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <div className={`w-12 h-12 ${stat.color} text-white rounded-xl flex items-center justify-center mb-4`}>
-              {stat.icon}
-            </div>
-            <p className="text-slate-500 text-sm font-medium">{stat.label}</p>
-            <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        <StatCard label="Registered Users" value={stats.userCount} icon={<Users className="text-blue-600"/>} />
+        <StatCard label="Pending Approval" value={stats.leaveCount} icon={<AlertCircle className="text-amber-600"/>} />
+        <StatCard label="Total Punch Logs" value={stats.attendanceCount} icon={<Activity className="text-emerald-600"/>} />
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h3 className="font-bold text-slate-800 mb-4">System Event Log</h3>
-        <div className="space-y-3">
-          <p className="text-sm text-slate-600 border-l-4 border-blue-500 pl-3 py-1 bg-slate-50">Admin updated payroll settings for August 2025.</p>
-          <p className="text-sm text-slate-600 border-l-4 border-emerald-500 pl-3 py-1 bg-slate-50">New HR user 'Sarah Miller' assigned to system.</p>
+      <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+        <Settings className="absolute right-[-20px] bottom-[-20px] text-white/5" size={200} />
+        <h2 className="text-2xl font-bold mb-4 flex items-center">
+          <Shield className="mr-3 text-blue-400" /> System Integrity
+        </h2>
+        <div className="space-y-4 relative z-10">
+           <p className="text-slate-400 border-l-2 border-blue-500 pl-4">Database: <span className="text-white font-mono">SQLite (Persistent)</span></p>
+           <p className="text-slate-400 border-l-2 border-emerald-500 pl-4">Encryption: <span className="text-white font-mono">Bcrypt AES-256</span></p>
+           <p className="text-slate-400 border-l-2 border-purple-500 pl-4">API Status: <span className="text-white font-mono">Restful / Online</span></p>
         </div>
       </div>
     </Layout>
   );
-};
+}
 
-export default AdminDashboard;
+function StatCard({ label, value, icon }) {
+  return (
+    <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm transition-all hover:scale-[1.02]">
+      <div className="bg-slate-50 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">{icon}</div>
+      <p className="text-slate-400 text-xs font-black uppercase tracking-widest">{label}</p>
+      <p className="text-4xl font-black text-slate-900 mt-1">{value}</p>
+    </div>
+  );
+}
