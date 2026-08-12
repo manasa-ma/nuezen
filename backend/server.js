@@ -8,34 +8,34 @@ const path = require("path");
 const app = express();
 
 // ======================================================
-// MIDDLEWARE (Updated CORS)
+// 1. IMPROVED CORS (Allows all Vercel actions)
 // ======================================================
-
-// This allows both your main Vercel URL and any Vercel Preview URLs to talk to the backend
 app.use(cors({
-  origin: true, // This allows all origins for testing; change to your specific URL later for security
+  origin: true,
   credentials: true,
-  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(express.json());
 
 // ======================================================
-// DATABASE (SQLite)
+// 2. DATABASE (SQLite Fix for Railway)
 // ======================================================
+// Using /tmp/ ensures the database is writable on Railway environments
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? '/tmp/database.sqlite' 
+  : path.join(__dirname, 'database.sqlite');
 
 const sequelize = new Sequelize({
   dialect: "sqlite",
-  // On Railway, it's best to use an absolute path for the database file
-  storage: path.join(__dirname, "database.sqlite"),
+  storage: dbPath,
   logging: false,
 });
 
 // ======================================================
-// MODELS
+// 3. MODELS
 // ======================================================
-
 const User = sequelize.define("User", {
   name: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
@@ -44,130 +44,84 @@ const User = sequelize.define("User", {
   salary: { type: DataTypes.INTEGER, defaultValue: 50000 },
 });
 
-const Leave = sequelize.define("Leave", {
-  userName: { type: DataTypes.STRING },
-  userId: { type: DataTypes.INTEGER },
-  reason: { type: DataTypes.STRING },
-  status: { type: DataTypes.STRING, defaultValue: "Pending" },
-});
-
 const Attendance = sequelize.define("Attendance", {
-  userName: { type: DataTypes.STRING },
   userId: { type: DataTypes.INTEGER },
+  userName: { type: DataTypes.STRING },
   date: { type: DataTypes.STRING },
   time: { type: DataTypes.STRING },
+  status: { type: DataTypes.STRING, defaultValue: "Present" }
+});
+
+const Leave = sequelize.define("Leave", {
+  userId: { type: DataTypes.INTEGER },
+  userName: { type: DataTypes.STRING },
+  reason: { type: DataTypes.STRING },
+  status: { type: DataTypes.STRING, defaultValue: "Pending" }
 });
 
 // ======================================================
-// ROUTES
+// 4. ROUTES
 // ======================================================
 
-app.get("/", (req, res) => {
-  res.json({ success: true, message: "NEUZEN AI HRMS Backend is running 🚀" });
-});
+app.get("/", (req, res) => res.json({ status: "Online", message: "NEUZEN AI HRMS Live" }));
 
-app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "Backend is healthy" });
-});
-
-// LOGIN
+// --- AUTH & ONBOARDING (User Creation) ---
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
-    }
-
     const user = await User.findOne({ where: { email } });
-
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
-
-    const passwordMatch = bcrypt.compareSync(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET || "development-secret",
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      _id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      salary: user.salary,
-      token,
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error during login" });
-  }
+    const token = jwt.sign({ id: user.id, role: user.role }, "secret123", { expiresIn: "7d" });
+    res.json({ _id: user.id, name: user.name, email: user.email, role: user.role, salary: user.salary, token });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// ADMIN: Get all users
-app.get("/api/admin/users", async (req, res) => {
+// THIS IS THE ONBOARDING ROUTE
+app.post("/api/admin/users", async (req, res) => {
   try {
-    const users = await User.findAll({ attributes: { exclude: ["password"] } });
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to get users" });
-  }
+    const { name, email, password, role, salary } = req.body;
+    const hashedPassword = bcrypt.hashSync(password || "password123", 10);
+    const newUser = await User.create({ name, email, password: hashedPassword, role, salary });
+    res.status(201).json(newUser);
+  } catch (e) { res.status(500).json({ message: "Onboarding failed: " + e.message }); }
 });
 
-// HR: Get employees
-app.get("/api/hr/employees", async (req, res) => {
-  try {
-    const employees = await User.findAll({
-      where: { role: "Employee" },
-      attributes: { exclude: ["password"] },
-    });
-    res.json(employees);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to get employees" });
-  }
-});
-
-// LEAVE: Mark Attendance
+// --- ATTENDANCE ---
 app.post("/api/attendance", async (req, res) => {
   try {
-    const { userName, userId, date, time } = req.body;
-    const attendance = await Attendance.create({ userName, userId, date, time });
-    res.status(201).json({ success: true, attendance });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to mark attendance" });
-  }
+    const { userId, userName, date, time } = req.body;
+    const record = await Attendance.create({ userId, userName, date, time });
+    res.status(201).json(record);
+  } catch (e) { res.status(500).json({ message: "Failed to mark attendance" }); }
+});
+
+// --- LEAVES ---
+app.post("/api/leaves", async (req, res) => {
+  try {
+    const { userId, userName, reason } = req.body;
+    const leave = await Leave.create({ userId, userName, reason });
+    res.status(201).json(leave);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// --- GET DATA ---
+app.get("/api/admin/users", async (req, res) => {
+  const users = await User.findAll({ attributes: { exclude: ['password'] } });
+  res.json(users);
 });
 
 // ======================================================
-// SERVER START
+// 5. START SERVER
 // ======================================================
-
 const PORT = process.env.PORT || 5000;
-
-sequelize.sync({ force: false }).then(async () => {
-  console.log("✅ Database connected");
-
-  // Create demo users if DB is empty
+sequelize.sync().then(async () => {
   const count = await User.count();
   if (count === 0) {
-    console.log("🌱 Creating demo users...");
     const hash = bcrypt.hashSync("password123", 10);
-    
-    await User.create({ name: "Admin", email: "admin@neuzen.ai", password: hash, role: "Admin", salary: 100000 });
-    await User.create({ name: "HR", email: "hr@neuzen.ai", password: hash, role: "HR", salary: 75000 });
-    await User.create({ name: "Employee", email: "employee@neuzen.ai", password: hash, role: "Employee", salary: 50000 });
-    
-    console.log("✅ Demo users created");
+    await User.create({ name: "HR Manager", email: "hr@neuzen.ai", password: hash, role: "HR" });
+    await User.create({ name: "John Employee", email: "employee@neuzen.ai", password: hash, role: "Employee" });
   }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
-}).catch((error) => {
-  console.error("❌ Database connection failed:", error);
+  app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server on port ${PORT}`));
 });
