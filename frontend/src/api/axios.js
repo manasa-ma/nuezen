@@ -1,8 +1,11 @@
 import axios from "axios";
 
+// HARDCODING the working Railway URL to bypass Vercel variable issues
 const api = axios.create({
-  // Hardcode your working Railway URL here for 100% certainty
   baseURL: "https://focused-embrace-production-b69f.up.railway.app",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 export default api;
