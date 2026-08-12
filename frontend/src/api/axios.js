@@ -1,11 +1,10 @@
 import axios from "axios";
 
-// Clean the URL to ensure no trailing slash
-const rawUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const cleanUrl = rawUrl.replace(/\/$/, "");
+// This line gets the URL from Vercel
+const apiURL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
-  baseURL: cleanUrl,
+  baseURL: apiURL,
   headers: {
     "Content-Type": "application/json",
   },
