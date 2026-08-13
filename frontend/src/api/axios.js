@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // Hardcoded to ensure Vercel uses the correct URL
-  baseURL: "https://focused-embrace-production-b69f.up.railway.app",
+  // Replace this with your actual, live BACKEND Vercel URL
+  baseURL: "https://nuezen.vercel.app/", 
   headers: {
     "Content-Type": "application/json",
   },
