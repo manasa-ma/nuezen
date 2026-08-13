@@ -14,7 +14,7 @@ app.use(cors({
   origin: [
     "http://localhost:5173", 
     "http://localhost:3000", 
-    "https://vercel.app"
+    "https://vercel.app" // Your live production frontend URL
   ], 
   credentials: true 
 }));
@@ -93,7 +93,37 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// ONBOARDING
+// OPTIMIZED ADMIN & HR DASHBOARD STATS
+app.get("/api/admin/stats", async (req, res) => {
+  try {
+    await connectDB();
+    const totalEmployees = await User.countDocuments({ role: 'Employee' });
+    const totalHR = await User.countDocuments({ role: 'HR' });
+    const pendingLeaves = await Leave.countDocuments({ status: 'Pending' });
+    const recentUsers = await User.find({}, "-password").sort({ _id: -1 }).limit(5);
+
+    res.json({
+      totalEmployees: totalEmployees + totalHR + 1, // Headcount calculation aggregate
+      pendingLeaves,
+      recentUsers
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching global stats: ' + error.message });
+  }
+});
+
+// GET ALL USERS (Used to fetch full employee listings for tabular dashboards)
+app.get("/api/admin/users", async (req, res) => {
+  try {
+    await connectDB();
+    const users = await User.find({}, "-password");
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch profiles: " + err.message });
+  }
+});
+
+// ONBOARDING (Create User Profile)
 app.post("/api/admin/users", async (req, res) => {
   try {
     await connectDB();
@@ -102,7 +132,40 @@ app.post("/api/admin/users", async (req, res) => {
     const newUser = await User.create({ name, email, password: hash, role, salary });
     res.status(201).json(newUser);
   } catch (err) { 
-    res.status(500).json({ message: "Failed to onboard" }); 
+    res.status(500).json({ message: "Failed to onboard: Email might already exist" }); 
+  }
+});
+
+// UPDATE USER ROLE (Admin Panel Access Modifiers)
+app.patch("/api/admin/users/:id/role", async (req, res) => {
+  try {
+    await connectDB();
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, { role: req.body.role }, { new: true });
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update role: " + err.message });
+  }
+});
+
+// DELETE USER (Admin Panel Management Cleanup utilities)
+app.delete("/api/admin/users/:id", async (req, res) => {
+  try {
+    await connectDB();
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "User deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete user: " + err.message });
+  }
+});
+
+// GET ALL ATTENDANCE LOGS (For Master HR Monitoring tables)
+app.get("/api/attendance", async (req, res) => {
+  try {
+    await connectDB();
+    const logs = await Attendance.find({});
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch attendance: " + err.message });
   }
 });
 
@@ -113,7 +176,29 @@ app.post("/api/attendance", async (req, res) => {
     await Attendance.create(req.body); 
     res.status(201).json({ success: true }); 
   } catch (err) { 
-    res.status(500).json({ message: "Attendance failed" }); 
+    res.status(500).json({ message: "Attendance tracking invocation failed" }); 
+  }
+});
+
+// GET USER ATTENDANCE BY ID (For individual employee dashboard view historical components)
+app.get("/api/attendance/:userId", async (req, res) => {
+  try {
+    await connectDB();
+    const logs = await Attendance.find({ userId: req.params.userId });
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user logs: " + err.message });
+  }
+});
+
+// GET ALL LEAVE REQUESTS (For Admin/HR Decision matrices)
+app.get("/api/leaves", async (req, res) => {
+  try {
+    await connectDB();
+    const leaves = await Leave.find({});
+    res.json(leaves);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch leave ledger: " + err.message });
   }
 });
 
@@ -124,7 +209,29 @@ app.post("/api/leaves", async (req, res) => {
     await Leave.create(req.body); 
     res.status(201).json({ success: true }); 
   } catch (err) { 
-    res.status(500).json({ message: "Leave request failed" }); 
+    res.status(500).json({ message: "Leave processing validation failed" }); 
+  }
+});
+
+// GET USER LEAVES BY ID (For independent employee workflow histories)
+app.get("/api/leaves/:userId", async (req, res) => {
+  try {
+    await connectDB();
+    const userLeaves = await Leave.find({ userId: req.params.userId });
+    res.json(userLeaves);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch employee leaves: " + err.message });
+  }
+});
+
+// UPDATE LEAVE REQUEST STATUS (HR Action Handlers - Approve/Reject)
+app.patch("/api/leaves/:id", async (req, res) => {
+  try {
+    await connectDB();
+    const updatedLeave = await Leave.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+    res.json(updatedLeave);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update leave status: " + err.message });
   }
 });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/layout/Navbar';
 import API from '../../api/axios';
-import { Check, X, Clock, User, Search, AlertCircle } from 'lucide-react';
+import { Check, X, Clock, User, AlertCircle } from 'lucide-react';
 
 export default function LeaveApprovals() {
   const [leaves, setLeaves] = useState([]);
@@ -11,10 +11,11 @@ export default function LeaveApprovals() {
   const fetchLeaves = async () => {
     setLoading(true);
     try {
-      const res = await API.get('/hr/leaves');
+      // 🌟 FIX: Updated route to match your MongoDB backend leaves endpoint
+      const res = await API.get('/api/leaves');
       setLeaves(res.data);
     } catch (err) {
-      console.error("Error fetching leaves");
+      console.error("Error fetching leaves:", err);
     } finally {
       setLoading(false);
     }
@@ -24,7 +25,8 @@ export default function LeaveApprovals() {
 
   const handleAction = async (id, status) => {
     try {
-      await API.patch(`/hr/leaves/${id}`, { status });
+      // 🌟 FIX: Routing targets the correct MongoDB object update link
+      await API.patch(`/api/leaves/${id}`, { status });
       alert(`Request has been ${status}`);
       fetchLeaves(); // Refresh the list automatically
     } catch (err) {
@@ -72,7 +74,8 @@ export default function LeaveApprovals() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {filteredLeaves.map((leave) => (
-              <div key={leave.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between hover:shadow-md transition-shadow">
+              // 🌟 FIX: Changed key assignment to leave._id for MongoDB compatibility
+              <div key={leave._id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
                     <User size={24} />
@@ -102,13 +105,15 @@ export default function LeaveApprovals() {
                   {leave.status === 'Pending' && (
                     <div className="flex gap-2 ml-4">
                       <button 
-                        onClick={() => handleAction(leave.id, 'Approved')}
+                        // 🌟 FIX: Updated action target variable identifier to leave._id
+                        onClick={() => handleAction(leave._id, 'Approved')}
                         className="p-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all"
                       >
                         <Check size={18} />
                       </button>
                       <button 
-                        onClick={() => handleAction(leave.id, 'Rejected')}
+                        // 🌟 FIX: Updated action target variable identifier to leave._id
+                        onClick={() => handleAction(leave._id, 'Rejected')}
                         className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-lg shadow-red-100 transition-all"
                       >
                         <X size={18} />

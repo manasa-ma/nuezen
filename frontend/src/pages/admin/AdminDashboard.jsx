@@ -29,7 +29,8 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="text-slate-400 text-sm">Database</span>
-                  <span className="text-blue-400 font-mono text-sm">SQLITE_PERSISTENT</span>
+                  {/* 🌟 FIX: Updated label from SQLITE to MONGODB_ATLAS to reflect production */}
+                  <span className="text-blue-400 font-mono text-sm">MONGODB_ATLAS</span>
                 </div>
               </div>
             </div>

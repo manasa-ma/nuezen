@@ -2,34 +2,37 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../../components/layout/Navbar';
 import { useNavigate } from 'react-router-dom';
 import API from '../../api/axios';
-import { Clock, Calendar, Download, CheckCircle } from 'lucide-react';
+import { Clock, CheckCircle } from 'lucide-react';
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
   const [attendanceStatus, setAttendanceStatus] = useState("Not Marked");
   const [loading, setLoading] = useState(false);
-  const user = JSON.parse(localStorage.getItem('profile'));
+  
+  // 🌟 FIX: Updated storage reference key from 'profile' to 'user' to align with api.js
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  // 1. Check if already checked in today when page loads
   useEffect(() => {
     const checkTodayAttendance = async () => {
       try {
-        const res = await API.get(`/attendance/${user._id}`);
+        // 🌟 FIX: Endpoint path prefix updated to target live production API URL
+        const res = await API.get(`/api/attendance/${user._id}`);
         const today = new Date().toLocaleDateString();
         const found = res.data.find(log => log.date === today);
         if (found) setAttendanceStatus("Checked In");
       } catch (err) {
-        console.error("Error fetching attendance");
+        console.error("Error fetching attendance records:", err);
       }
     };
-    if (user) checkTodayAttendance();
+    if (user && user._id) checkTodayAttendance();
   }, [user]);
 
-  // 2. The Check In Action
   const handleCheckIn = async () => {
+    if (!user) return alert("Session expired. Please log in again.");
     setLoading(true);
     try {
-      await API.post('/attendance', {
+      // 🌟 FIX: Prefix routing endpoints to run through /api path configs
+      await API.post('/api/attendance', {
         userId: user._id,
         userName: user.name,
         date: new Date().toLocaleDateString(),
@@ -93,7 +96,7 @@ export default function EmployeeDashboard() {
           <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 text-center flex flex-col justify-between">
             <div>
               <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-2">Latest Pay Slip</p>
-              <h2 className="text-3xl font-black text-slate-800 mb-6">July 2025</h2>
+              <h2 className="text-3xl font-black text-slate-800 mb-6">August 2026</h2>
             </div>
             <button 
               onClick={() => navigate('/employee/payroll')}
@@ -109,7 +112,7 @@ export default function EmployeeDashboard() {
         <div className="mt-10 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-xl">
            <Clock className="absolute right-[-20px] bottom-[-20px] text-white/5" size={200} />
            <div className="relative z-10">
-             <h3 className="text-xl font-bold mb-2">Welcome Back, {user?.name}!</h3>
+             <h3 className="text-xl font-bold mb-2">Welcome Back, {user?.name || "Employee"}!</h3>
              <p className="text-slate-400 max-w-md">Your work session is active. Don't forget to review your tasks and upcoming team meetings in the calendar.</p>
              <button 
               onClick={() => navigate('/employee/attendance')}

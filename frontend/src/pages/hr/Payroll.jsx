@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/layout/Navbar';
 import API from '../../api/axios';
-import { Banknote, Download, CheckCircle, Search, CreditCard, Receipt, TrendingUp } from 'lucide-react';
+import { Banknote, Download, Search, CreditCard, Receipt, TrendingUp } from 'lucide-react';
 
 export default function Payroll() {
   const [employees, setEmployees] = useState([]);
@@ -11,10 +11,11 @@ export default function Payroll() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await API.get('/hr/employees');
+        // 🌟 FIX: Updated route string path to match your live production endpoint
+        const res = await API.get('/api/admin/users');
         setEmployees(res.data);
       } catch (err) {
-        console.error("Payroll fetch error");
+        console.error("Payroll fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -29,7 +30,7 @@ export default function Payroll() {
   const totalMonthlyExp = employees.reduce((sum, emp) => sum + (emp.salary || 0), 0);
 
   const filteredEmployees = employees.filter(e => 
-    e.name.toLowerCase().includes(searchTerm.toLowerCase())
+    e.name && e.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -47,7 +48,8 @@ export default function Payroll() {
              <TrendingUp className="absolute right-[-10px] bottom-[-10px] text-white/5" size={120} />
              <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-2">Total Monthly Payout</p>
              <h2 className="text-4xl font-black text-blue-400">₹{totalMonthlyExp.toLocaleString()}</h2>
-             <p className="text-xs text-slate-500 mt-4 font-bold">Projected for {new Date().toLocaleString('default', { month: 'long' })} 2025</p>
+             {/* 🌟 FIX: Updated calendar metric year string projection to 2026 */}
+             <p className="text-xs text-slate-500 mt-4 font-bold">Projected for {new Date().toLocaleString('default', { month: 'long' })} 2026</p>
           </div>
 
           <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
@@ -96,46 +98,51 @@ export default function Payroll() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/80 transition group">
-                    <td className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center font-black text-xs">
-                          {emp.name.substring(0, 2).toUpperCase()}
+                {loading ? (
+                  <tr><td colSpan="4" className="p-10 text-center text-slate-400 animate-pulse font-bold">Loading compensation matrix...</td></tr>
+                ) : (
+                  filteredEmployees.map((emp) => (
+                    // 🌟 FIX: Updated unique mapping identity key targeting emp._id for MongoDB logs
+                    <tr key={emp._id} className="hover:bg-slate-50/80 transition group">
+                      <td className="p-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center font-black text-xs">
+                            {emp.name ? emp.name.substring(0, 2).toUpperCase() : '??'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-800">{emp.name || "Unknown User"}</p>
+                            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{emp.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-800">{emp.name}</p>
-                          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{emp.email}</p>
+                      </td>
+                      <td className="p-6">
+                        <p className="font-bold text-slate-600">₹{emp.salary?.toLocaleString()}</p>
+                      </td>
+                      <td className="p-6">
+                        <p className="font-black text-slate-800">₹{(emp.salary * 0.9).toLocaleString()}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">After 10% TDS</p>
+                      </td>
+                      <td className="p-6 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => handlePay(emp.name)}
+                            className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                          >
+                            <CreditCard size={14} className="mr-2" /> Pay Now
+                          </button>
+                          <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition">
+                            <Download size={18} />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-6">
-                      <p className="font-bold text-slate-600">₹{emp.salary?.toLocaleString()}</p>
-                    </td>
-                    <td className="p-6">
-                      <p className="font-black text-slate-800">₹{(emp.salary * 0.9).toLocaleString()}</p>
-                      <p className="text-[10px] text-slate-400 font-medium">After 10% TDS</p>
-                    </td>
-                    <td className="p-6 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => handlePay(emp.name)}
-                          className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100"
-                        >
-                          <CreditCard size={14} className="mr-2" /> Pay Now
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition">
-                          <Download size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
           
-          {filteredEmployees.length === 0 && (
+          {!loading && filteredEmployees.length === 0 && (
              <div className="p-20 text-center text-slate-300 font-bold uppercase tracking-widest italic">
                No employees found in payroll records.
              </div>

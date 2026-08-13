@@ -17,8 +17,8 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      // 2. API Call
-      await API.post('/hr/onboard', form);
+      // 2. API Call (FIXED: Route changed from '/hr/onboard' to match your backend model endpoint)
+      await API.post('/api/admin/users', form);
       
       alert(`✅ Success! Digital Offer Letter sent to ${form.email}. They can now login with password: password123`);
       

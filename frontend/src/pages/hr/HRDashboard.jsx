@@ -19,13 +19,14 @@ export default function HRDashboard() {
     attendanceToday: 0
   });
 
-  // Fetch real data to make the dashboard alive
+  // Fetch real data from live production collections
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const empRes = await API.get('/hr/employees');
-        const leaveRes = await API.get('/hr/leaves');
-        const attendRes = await API.get('/hr/attendance');
+        // 🌟 FIX: Shift endpoints to query your live MongoDB collection endpoints
+        const empRes = await API.get('/api/admin/users');
+        const leaveRes = await API.get('/api/leaves');
+        const attendRes = await API.get('/api/attendance');
         
         setStats({
           totalEmployees: empRes.data.length + 1, // +1 for the HR themselves
@@ -33,7 +34,7 @@ export default function HRDashboard() {
           attendanceToday: attendRes.data.length
         });
       } catch (err) {
-        console.error("Dashboard stats error", err);
+        console.error("Dashboard stats error:", err);
       }
     };
     fetchData();
@@ -128,7 +129,6 @@ export default function HRDashboard() {
   );
 }
 
-// Sub-component for stats
 function StatCard({ label, value, icon, color = "border-blue-50" }) {
   return (
     <div className={`bg-white p-6 rounded-3xl border-2 ${color} shadow-sm transition-transform hover:translate-y-[-4px]`}>

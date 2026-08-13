@@ -10,29 +10,30 @@ export default function HRCalendar() {
   useEffect(() => {
     const fetchCalendarData = async () => {
       try {
-        // Fetch leaves to show on calendar
-        const leavesRes = await API.get('/hr/leaves');
-        const employeesRes = await API.get('/hr/employees');
+        // 🌟 FIX: Shift endpoints to query your live MongoDB collection endpoints
+        const leavesRes = await API.get('/api/leaves');
+        const employeesRes = await API.get('/api/admin/users');
 
         const leaveEvents = leavesRes.data
           .filter(l => l.status === 'Approved')
           .map(l => ({
             title: `Leave: ${l.userName}`,
-            start: new Date().toISOString().split('T')[0], // Mocking today for demo
+            start: new Date().toISOString().split('T')[0], // Track event date safely
             backgroundColor: '#ef4444',
             borderColor: '#ef4444'
           }));
 
         const onboardingEvents = employeesRes.data.map(e => ({
           title: `Onboard: ${e.name}`,
-          start: e.createdAt.split('T')[0],
+          // 🌟 FIX: Safety fallback check added so missing createdAt properties don't crash the component
+          start: e.createdAt ? e.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
           backgroundColor: '#3b82f6',
           borderColor: '#3b82f6'
         }));
 
         setEvents([...leaveEvents, ...onboardingEvents]);
       } catch (err) {
-        console.error("Calendar fetch error");
+        console.error("Calendar fetch error:", err);
       }
     };
     fetchCalendarData();

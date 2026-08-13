@@ -8,13 +8,18 @@ export default function HRAttendance() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchAllLogs = async () => {
-    const res = await API.get('/hr/attendance');
-    setLogs(res.data);
+    try {
+      // 🌟 FIX: Shift endpoint to query your live MongoDB attendance collection endpoint
+      const res = await API.get('/api/attendance');
+      setLogs(res.data);
+    } catch (err) {
+      console.error("Error fetching attendance logs:", err);
+    }
   };
 
   useEffect(() => { fetchAllLogs(); }, []);
 
-  const filteredLogs = logs.filter(l => l.userName.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredLogs = logs.filter(l => l.userName && l.userName.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <Layout>
@@ -46,13 +51,14 @@ export default function HRAttendance() {
               <tr><td colSpan="5" className="p-20 text-center text-slate-400 italic">No attendance records found for today.</td></tr>
             )}
             {filteredLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-slate-50/50 transition">
+              // 🌟 FIX: Changed key assignment to log._id for MongoDB compatibility
+              <tr key={log._id} className="hover:bg-slate-50/50 transition">
                 <td className="p-6">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold mr-3">
-                      {log.userName.charAt(0)}
+                      {log.userName ? log.userName.charAt(0) : '?'}
                     </div>
-                    <span className="font-bold text-slate-700">{log.userName}</span>
+                    <span className="font-bold text-slate-700">{log.userName || "Unknown Employee"}</span>
                   </div>
                 </td>
                 <td className="p-6 text-slate-500 font-medium">{log.date}</td>

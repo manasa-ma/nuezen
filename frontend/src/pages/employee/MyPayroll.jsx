@@ -6,24 +6,25 @@ export default function MyPayroll() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('profile');
+    // 🌟 FIX: Updated storage reference key from 'profile' to 'user' to align with auth setup
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
 
+  // 🌟 FIX: Shifted static summary lists to current 2026 deployment dates
   const payslips = [
-    { month: 'July 2025', status: 'Paid' },
-    { month: 'June 2025', status: 'Paid' },
+    { month: 'July 2026', status: 'Paid' },
+    { month: 'June 2026', status: 'Paid' },
   ];
 
-  if (!user) return <Layout><div className="p-10">Loading Financial Data...</div></Layout>;
+  if (!user) return <Layout><div className="p-10 font-bold text-slate-400 animate-pulse">Loading Financial Data...</div></Layout>;
 
   const baseSalary = user.salary || 60000;
   const tax = baseSalary * 0.10;
   const netPay = baseSalary - tax;
 
-  // --- NEW DOWNLOAD LOGIC ---
   const downloadPayslip = (month) => {
     const content = `
 ================================================
@@ -51,16 +52,13 @@ This is a system-generated digital document.
 ================================================
     `;
 
-    // Create a blob from the content
     const blob = new Blob([content], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     
-    // Create a temporary anchor element to trigger download
     const link = document.createElement('a');
     link.href = url;
     link.download = `Payslip_${month.replace(' ', '_')}_${user.name.replace(' ', '_')}.txt`;
     
-    // Trigger the download and clean up
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -130,7 +128,6 @@ This is a system-generated digital document.
                     ₹{netPay.toLocaleString()}
                   </td>
                   <td className="p-6 text-right">
-                    {/* BUTTON NOW CALLS THE DOWNLOAD FUNCTION */}
                     <button 
                       onClick={() => downloadPayslip(slip.month)}
                       className="p-3 text-blue-600 hover:bg-blue-50 rounded-2xl transition border border-transparent hover:border-blue-100"
