@@ -1,33 +1,101 @@
-// LOGIN (With Serverless Auto-Fallback Seeding)
+// FIRST: Import your modules
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
+// SECOND: Declare the app instance (Crucial - must happen before any app.use)
+const app = express();
+
+// THIRD: Apply configurations and middleware
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+
+// FOURTH: Connect Database
+const mongoURI = process.env.MONGO_URI; 
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    const db = await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 });
+    isConnected = db.connections.readyState === 1;
+    console.log("✅ MongoDB Connected Successfully");
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err);
+  }
+};
+connectDB();
+
+// FIFTH: Models
+const User = mongoose.model("User", new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, default: "Employee" },
+  salary: { type: Number, default: 50000 }
+}));
+
+const Attendance = mongoose.model("Attendance", new mongoose.Schema({
+  userId: String, userName: String, date: String, time: String
+}));
+
+const Leave = mongoose.model("Leave", new mongoose.Schema({
+  userId: String, userName: String, reason: String, status: { type: String, default: "Pending" }
+}));
+
+// SIXTH: All Routes
+app.get("/", async (req, res) => {
+  await connectDB();
+  res.json({ status: "STABLE_SYSTEM_ONLINE" });
+});
+
 app.post("/api/auth/login", async (req, res) => {
   try {
+    await connectDB();
     const { email, password } = req.body;
-
-    // 1. Look for the user
     let user = await User.findOne({ email });
 
-    // 2. SERVERLESS FIX: If database is totally empty and they tried hr@neuzen.ai
     if (!user && email === "hr@neuzen.ai") {
       const hash = bcrypt.hashSync("password123", 10);
-      user = await User.create({ 
-        name: "HR Manager", 
-        email: "hr@neuzen.ai", 
-        password: hash, 
-        role: "HR" 
-      });
-      console.log("🌱 Emergency Serverless Seeding: Created hr@neuzen.ai");
+      user = await User.create({ name: "HR Manager", email: "hr@neuzen.ai", password: hash, role: "HR" });
     }
 
-    // 3. Run the credential verification check
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const secretKey = process.env.JWT_SECRET || "fallback_secret";
     const token = jwt.sign({ id: user._id, role: user.role }, secretKey, { expiresIn: "7d" });
-    
     res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, salary: user.salary, token });
-  } catch (err) { 
-    res.status(500).json({ message: err.message }); 
-  }
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
+
+app.post("/api/admin/users", async (req, res) => {
+  try {
+    const { name, email, password, role, salary } = req.body;
+    const hash = bcrypt.hashSync(password || "password123", 10);
+    const newUser = await User.create({ name, email, password: hash, role, salary });
+    res.status(201).json(newUser);
+  } catch (err) { res.status(500).json({ message: "Failed to onboard" }); }
+});
+
+app.post("/api/attendance", async (req, res) => {
+  try { await Attendance.create(req.body); res.status(201).json({ success: true }); } 
+  catch (err) { res.status(500).json({ message: "Attendance failed" }); }
+});
+
+app.post("/api/leaves", async (req, res) => {
+  try { await Leave.create(req.body); res.status(201).json({ success: true }); } 
+  catch (err) { res.status(500).json({ message: "Leave request failed" }); }
+});
+
+// SEVENTH: Local Server execution rule
+const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => console.log(`🚀 Local Server running on port ${PORT}`));
+}
+
+// EIGHTH: Export app for serverless function assignment
+module.exports = app;
