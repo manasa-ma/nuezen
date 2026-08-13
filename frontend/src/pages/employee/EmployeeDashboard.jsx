@@ -10,7 +10,9 @@ export default function EmployeeDashboard() {
   const [loading, setLoading] = useState(false);
   
   // 🌟 FIX: Updated storage reference key from 'profile' to 'user' to align with api.js
-  const user = JSON.parse(localStorage.getItem('user'));
+// 🌟 FIX: Check both local storage keys to prevent false session timeouts
+const user = JSON.parse(localStorage.getItem('user')) || JSON.parse(localStorage.getItem('profile'));
+
 
   useEffect(() => {
     const checkTodayAttendance = async () => {

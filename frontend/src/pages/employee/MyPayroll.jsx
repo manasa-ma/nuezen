@@ -5,13 +5,14 @@ import { Banknote, Download, FileText, IndianRupee, ShieldCheck } from 'lucide-r
 export default function MyPayroll() {
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    // 🌟 FIX: Updated storage reference key from 'profile' to 'user' to align with auth setup
-    const storedUser = localStorage.getItem('user');
+   useEffect(() => {
+    // 🌟 FIX: Checks both 'user' and 'profile' keys so it never stays stuck loading
+    const storedUser = localStorage.getItem('user') || localStorage.getItem('profile');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
   }, []);
+
 
   // 🌟 FIX: Shifted static summary lists to current 2026 deployment dates
   const payslips = [
