@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // 🌟 FIX: Removed the trailing slash at the end of the URL string
-  baseURL: "https://nuezen.vercel.app", 
+  // 🌟 FIX: Strips away external string modifiers and uses your environment variable safely
+  baseURL: import.meta.env.VITE_API_URL, 
   headers: {
     "Content-Type": "application/json",
   },
