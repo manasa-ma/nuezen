@@ -11,11 +11,7 @@ const app = express();
 
 // THIRD: Apply configurations and middleware (Authorized for Vercel deployment)
 app.use(cors({ 
-  origin: [
-    "http://localhost:5173", 
-    "http://localhost:3000", 
-    "https://vercel.app" // Your live production frontend URL
-  ], 
+  origin: true,
   credentials: true 
 }));
 app.use(express.json());
